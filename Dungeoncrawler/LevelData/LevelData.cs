@@ -46,6 +46,7 @@ namespace Dungeoncrawler.Data
         public bool IsEnemyAt(int x, int y) =>
             Elements.Any(e => e.X == x && e.Y == y && e is Enemy);
 
+
         public void TryMovePlayer(int x, int y)
         {
             var enemy = Elements.OfType<Enemy>().FirstOrDefault(e => e.X == x && e.Y == y);

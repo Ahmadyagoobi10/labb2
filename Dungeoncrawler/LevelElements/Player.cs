@@ -2,6 +2,7 @@
 
 using System;
 using Dungeoncrawler.LevelElements;
+using Dungeoncrawler.Mechanics;
 namespace Dungeoncrawler.LevelElements;
 
 public class Player : LevelElement

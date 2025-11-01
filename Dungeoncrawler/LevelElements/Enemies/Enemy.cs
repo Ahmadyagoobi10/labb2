@@ -1,5 +1,6 @@
 ﻿
 using Dungeoncrawler.LevelElements;
+using Dungeoncrawler.Mechanics;
 using Dungeoncrawler.Data;
 
 namespace Dungeoncrawler.LevelElements.Enemies
