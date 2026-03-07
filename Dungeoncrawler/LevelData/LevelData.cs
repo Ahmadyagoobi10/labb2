@@ -9,7 +9,7 @@ namespace Dungeoncrawler.Data
     public class LevelData
     {
         public List<LevelElement> Elements { get; private set; } = new List<LevelElement>();
-        public Player Player { get; private set; }
+        public Player Player { get; set; }
         public int Width { get; private set; }
         public int Height { get; private set; }
 

@@ -4,9 +4,9 @@ using Dungeoncrawler.LevelElements;
 using Dungeoncrawler.LevelElements.Enemies;
 using Dungeoncrawler.Mechanics;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Collections.Generic;
 
 class Program
 {
@@ -28,22 +28,54 @@ class Program
         Player player = level.Player;
         const int VISION = 5;
         bool[,] discovered = new bool[level.Width, level.Height];
-
-      
         List<string> combatLog = new List<string>();
+        GameSaver saver = new GameSaver();
+
+        Console.WriteLine("Vill du ladda ett sparat spel? (J/N)");
+        var keyLoad = Console.ReadKey(true).Key;
+        if (keyLoad == ConsoleKey.J)
+        {
+            Console.Write("\nAnge spelarens namn: ");
+            string loadName = Console.ReadLine();
+            var loadedPlayer = saver.LoadPlayer(loadName);
+
+            if (loadedPlayer != null)
+            {
+                player = loadedPlayer;
+                level.Player = loadedPlayer;
+
+                var loadedEnemies = saver.LoadEnemies();
+
+                Console.WriteLine("Enemies loaded: " + loadedEnemies.Count);
+                foreach (var enemy in loadedEnemies)
+                {
+                    Console.WriteLine($"{enemy.Name} at X:{enemy.X} Y:{enemy.Y} HP:{enemy.HP}");
+                }
+
+                Console.ReadKey(true);
+
+                level.Elements.RemoveAll(e => e is Enemy);
+                level.Elements.AddRange(loadedEnemies);
+
+                Console.WriteLine("Spelet laddat!");
+                Console.ReadKey(true);
+            }
+            else
+            {
+                Console.WriteLine("Ingen sparad spelare hittades med det namnet.");
+                Console.ReadKey(true);
+            }
+        }
 
         while (true)
         {
             Console.Clear();
-
-            
             for (int i = 0; i < combatLog.Count; i++)
             {
                 Console.SetCursorPosition(0, i);
                 Console.WriteLine(combatLog[i].PadRight(Console.WindowWidth));
             }
 
-        
             foreach (var wall in level.Elements.OfType<Wall>())
             {
                 double dist = level.Distance(player.X, player.Y, wall.X, wall.Y);
@@ -51,21 +83,16 @@ class Program
                 if (discovered[wall.X, wall.Y]) wall.Draw();
             }
 
-            
             foreach (var enemy in level.Elements.OfType<Enemy>())
             {
                 double dist = level.Distance(player.X, player.Y, enemy.X, enemy.Y);
                 if (dist <= VISION && !enemy.IsDead) enemy.DrawIfVisible(true);
             }
 
-            
             player.Draw();
-
-            
             Console.SetCursorPosition(0, level.Height + 1);
             Console.Write($"Player HP: {player.HP}      ");
 
-           
             int statusLine = Math.Min(level.Height + 2, Console.WindowHeight - 3);
             foreach (var enemy in level.Elements.OfType<Enemy>())
             {
@@ -76,7 +103,6 @@ class Program
                 }
             }
 
-          
             ConsoleKey key = Console.ReadKey(true).Key;
             int nx = player.X, ny = player.Y;
 
@@ -87,33 +113,31 @@ class Program
                 case ConsoleKey.A: nx--; break;
                 case ConsoleKey.D: nx++; break;
                 case ConsoleKey.Escape: return;
+                case ConsoleKey.P:
+                    var enemiesList = level.Elements.OfType<Enemy>().ToList();
+                    saver.Save(player, enemiesList);
+                    Console.SetCursorPosition(0, level.Height + 5);
+                    Console.WriteLine("Spelet sparat!");
+                    Console.ReadKey(true);
+                    break;
             }
 
             level.TryMovePlayer(nx, ny);
 
-           
             var enemiesHere = level.Elements
-                                    .OfType<Enemy>()
-                                    .Where(e => !e.IsDead && level.Distance(player.X, player.Y, e.X, e.Y) <= 1)
-                                    .ToList();
+                .OfType<Enemy>()
+                .Where(e => !e.IsDead && level.Distance(player.X, player.Y, e.X, e.Y) <= 1)
+                .ToList();
 
-            
             if (enemiesHere.Any())
             {
-                
                 combatLog.Clear();
-
                 foreach (var enemy in enemiesHere)
                 {
-                    
                     var result = Combat.PlayerAttack(player, enemy);
                     combatLog.Add($"Du attackerar {enemy.Name}: ATK {result.atk} vs DEF {result.def} → Skada: {result.dmg}");
-
-                   
                     var enemyResult = Combat.EnemyAttack(enemy, player);
                     combatLog.Add($"{enemy.Name} attackerar dig: ATK {enemyResult.atk} vs DEF {enemyResult.def} → Skada: {enemyResult.dmg}");
-
-                    
                     if (enemy.IsDead)
                     {
                         combatLog.Add($"{enemy.Name} dog!");
@@ -122,13 +146,11 @@ class Program
                 }
             }
 
-           
             foreach (var enemy in level.Elements.OfType<Enemy>().Where(e => !e.IsDead && !enemiesHere.Contains(e)).ToList())
             {
                 enemy.Update(player, level);
             }
 
-            
             if (player.IsDead)
             {
                 Console.Clear();
